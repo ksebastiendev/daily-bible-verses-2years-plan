@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,17 +9,6 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [sentEmail, setSentEmail] = useState("");
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        router.push("/home");
-      }
-    };
-    checkSession();
-  }, [router]);
 
   const handleSendLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +36,7 @@ export default function LoginPage() {
         setMessage("Lien envoyé. Vérifie ta boîte mail.");
         setSentEmail(email.trim());
       }
-    } catch (err) {
+    } catch {
       setError("Une erreur est survenue");
     } finally {
       setLoading(false);
@@ -76,7 +64,7 @@ export default function LoginPage() {
       } else {
         setMessage("Lien renvoyé. Vérifie ta boîte mail.");
       }
-    } catch (err) {
+    } catch {
       setError("Une erreur est survenue");
     } finally {
       setLoading(false);

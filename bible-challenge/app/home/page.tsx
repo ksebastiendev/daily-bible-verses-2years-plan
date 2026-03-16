@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function HomePage() {
   const [email, setEmail] = useState<string | null>(null);
@@ -61,6 +62,27 @@ export default function HomePage() {
           >
             Déconnexion
           </button>
+
+          <div className="mt-4 grid gap-2 sm:max-w-xs">
+            <Link
+              href="/app/home"
+              className="rounded-md bg-slate-900 px-4 py-2.5 text-center text-sm font-semibold text-white"
+            >
+              Aller au dashboard
+            </Link>
+            <Link
+              href="/app/challenge"
+              className="rounded-md border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-gray-800"
+            >
+              Voir le challenge
+            </Link>
+            <Link
+              href="/app/reading"
+              className="rounded-md border border-gray-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-gray-800"
+            >
+              Continuer la lecture
+            </Link>
+          </div>
         </div>
       </div>
     </div>

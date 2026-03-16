@@ -84,7 +84,7 @@ describe("POST /api/challenge/start", () => {
 
     expect(response.status).toBe(404);
     expect(body).toEqual({ error: "Active plan not found" });
-    expect(supabaseMock.readingPlansQuery.eq).toHaveBeenCalledWith("active", true);
+    expect(supabaseMock.readingPlansQuery.eq).toHaveBeenCalledWith("is_active", true);
   });
 
   it("conflict update payload excludes started_at", async () => {

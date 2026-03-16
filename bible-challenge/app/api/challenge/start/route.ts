@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       const { data: activePlan, error: activePlanError } = await supabase
         .from("reading_plans")
         .select("id")
-        .eq("active", true)
+        .eq("is_active", true)
         .limit(1)
         .maybeSingle();
 

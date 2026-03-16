@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import type { EmailOtpType } from "@supabase/supabase-js";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState(false);
@@ -12,6 +13,29 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        const tokenHash = params.get("token_hash");
+        const type = params.get("type") as EmailOtpType | null;
+
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            setError(true);
+            return;
+          }
+        } else if (tokenHash && type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type,
+          });
+
+          if (verifyError) {
+            setError(true);
+            return;
+          }
+        }
+
         const { data, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -19,11 +43,30 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        if (data.session) {
-          router.push("/home");
-        } else {
-          router.push("/login");
+        if (!data.session?.user) {
+          router.replace("/login");
+          return;
         }
+
+        const { data: challenge, error: challengeError } = await supabase
+          .from("user_challenges")
+          .select("id")
+          .eq("user_id", data.session.user.id)
+          .eq("active", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (challengeError) {
+          setError(true);
+          return;
+        }
+
+        if (!challenge?.id) {
+          router.replace("/app/onboarding");
+          return;
+        }
+
+        router.replace("/app/home");
       } catch (err) {
         console.error("Error during auth callback:", err);
         setError(true);

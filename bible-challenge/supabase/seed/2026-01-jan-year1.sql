@@ -1,6 +1,13 @@
 -- Seed: Janvier — Année 1 (Lecture quotidienne en 2 ans)
 -- Idempotent: utilise ON CONFLICT pour éviter les doublons
 
+-- Extension idempotente de la progression de lecture immersive
+ALTER TABLE public.checkins
+  ADD COLUMN IF NOT EXISTS verses_done int NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_verses int,
+  ADD COLUMN IF NOT EXISTS current_step int NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_steps int;
+
 WITH plan AS (
   INSERT INTO public.reading_plans (name, year, month, timezone, is_active)
   VALUES ('Bible Challenge - 2 ans', 1, 1, 'Africa/Porto-Novo', true)
