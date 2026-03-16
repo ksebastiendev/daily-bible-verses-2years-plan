@@ -19,11 +19,20 @@ interface TodayData {
   total_verses?: number;
 }
 
+interface DailyVerseData {
+  date: string;
+  reference: string;
+  text: string;
+  message: string | null;
+  source: "database" | "fallback";
+}
+
 export default function AppHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [today, setToday] = useState<TodayData | null>(null);
   const [guestMode, setGuestMode] = useState(false);
+  const [dailyVerse, setDailyVerse] = useState<DailyVerseData | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -68,6 +77,25 @@ export default function AppHomePage() {
     };
 
     run();
+  }, []);
+
+  useEffect(() => {
+    const runDailyVerse = async () => {
+      try {
+        const response = await fetch("/api/daily-verse");
+        const body = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          return;
+        }
+
+        setDailyVerse(body?.data ?? null);
+      } catch {
+        // Keep home usable even if daily verse is unavailable.
+      }
+    };
+
+    runDailyVerse();
   }, []);
 
   const progressLabel = useMemo(() => {
@@ -121,6 +149,15 @@ export default function AppHomePage() {
           {guestMode ? <p className="mt-1 text-xs text-gray-500">Session invite</p> : null}
         </section>
 
+        {dailyVerse ? (
+          <section className="rounded-xl border border-gray-200 bg-white p-5">
+            <p className="text-xs uppercase tracking-wide text-gray-500">Verset du jour</p>
+            <p className="mt-1 text-sm font-semibold text-gray-800">{dailyVerse.reference}</p>
+            <p className="mt-2 text-sm leading-6 text-gray-700">{dailyVerse.text}</p>
+            {dailyVerse.message ? <p className="mt-2 text-xs text-gray-500">{dailyVerse.message}</p> : null}
+          </section>
+        ) : null}
+
         <Link
           href="/app/reading"
           className="rounded-lg bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white"
@@ -140,6 +177,13 @@ export default function AppHomePage() {
           className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-center text-sm font-semibold text-gray-800"
         >
           Profil
+        </Link>
+
+        <Link
+          href="/app/leaderboard"
+          className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-center text-sm font-semibold text-gray-800"
+        >
+          Classement
         </Link>
       </div>
     </main>

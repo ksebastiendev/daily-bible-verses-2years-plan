@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-md px-4 pb-24 pt-4">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white">
-        <div className="mx-auto grid w-full max-w-md grid-cols-4">
+        <div className="mx-auto grid w-full max-w-md grid-cols-5">
           <Link href="/app/home" className="px-2 py-3 text-center text-xs font-medium text-gray-700">
             Home
           </Link>
@@ -34,6 +34,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             className="px-2 py-3 text-center text-xs font-medium text-gray-700"
           >
             Profile
+          </Link>
+          <Link
+            href="/app/leaderboard"
+            className="px-2 py-3 text-center text-xs font-medium text-gray-700"
+          >
+            Ranking
           </Link>
         </div>
       </nav>

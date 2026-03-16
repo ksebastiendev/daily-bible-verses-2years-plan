@@ -141,6 +141,43 @@ export function getOpenApiSpec(baseUrl?: string): OpenApiSpec {
       required: ["success", "planId", "startDayIndex"],
       additionalProperties: false,
     },
+    DailyVerseResponse: {
+      type: "object",
+      properties: {
+        date: { type: "string" },
+        reference: { type: "string" },
+        text: { type: "string" },
+        message: { type: "string", nullable: true },
+        source: { type: "string", enum: ["database", "fallback"] },
+      },
+      required: ["date", "reference", "text", "message", "source"],
+      additionalProperties: false,
+    },
+    LeaderboardLeader: {
+      type: "object",
+      properties: {
+        rank: { type: "integer" },
+        user_id: { type: "string" },
+        username: { type: "string" },
+        score: { type: "number" },
+        streak: { type: "integer" },
+      },
+      required: ["rank", "user_id", "username", "score", "streak"],
+      additionalProperties: false,
+    },
+    LeaderboardResponse: {
+      type: "object",
+      properties: {
+        period: { type: "string", enum: ["monthly", "global"] },
+        generated_at: { type: "string" },
+        leaders: {
+          type: "array",
+          items: { $ref: "#/components/schemas/LeaderboardLeader" },
+        },
+      },
+      required: ["period", "generated_at", "leaders"],
+      additionalProperties: false,
+    },
   };
 
   const paths: Record<string, OpenApiPathItem> = {
@@ -267,6 +304,64 @@ export function getOpenApiSpec(baseUrl?: string): OpenApiSpec {
           },
           "404": {
             description: "Active plan not found",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/daily-verse": {
+      get: {
+        summary: "Get daily verse",
+        tags: ["DailyVerse"],
+        security: [],
+        responses: {
+          "200": {
+            description: "Daily verse payload",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/DailyVerseResponse",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/leaderboard": {
+      get: {
+        summary: "Get leaderboard",
+        tags: ["Leaderboard"],
+        security: [],
+        responses: {
+          "200": {
+            description: "Leaderboard payload",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/LeaderboardResponse",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal Server Error",
             content: {
               "application/json": {
                 schema: {

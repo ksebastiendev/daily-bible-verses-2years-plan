@@ -2,12 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "./route";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { fetchVersesByReference } from "@/lib/bible/adapter";
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(),
 }));
 
+vi.mock("@/lib/bible/adapter", () => ({
+  fetchVersesByReference: vi.fn().mockResolvedValue(null),
+}));
+
 const mockedCreateSupabaseServerClient = vi.mocked(createSupabaseServerClient);
+const mockedFetchVersesByReference = vi.mocked(fetchVersesByReference);
 
 function createSupabaseMock(options: {
   session: unknown;
@@ -32,6 +38,7 @@ function createSupabaseMock(options: {
 describe("GET /api/challenge/today", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedFetchVersesByReference.mockResolvedValue(null);
   });
 
   it("returns 401 when no session", async () => {
@@ -50,7 +57,7 @@ describe("GET /api/challenge/today", () => {
     mockedCreateSupabaseServerClient.mockResolvedValue(
       createSupabaseMock({
         session: { user: { id: "user-1" } },
-        rpcData: { id: 1, reference: "Ps1-3" },
+        rpcData: { day_index: 1, reference: "Ps1-3" },
       }) as never,
     );
 
@@ -58,7 +65,20 @@ describe("GET /api/challenge/today", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({ data: { id: 1, reference: "Ps1-3" } });
+    expect(body).toEqual({
+      data: {
+        plan_id: null,
+        plan_day_id: null,
+        day_index: 1,
+        reference: "Ps1-3",
+        last_completed_day: null,
+        start_day_index: null,
+        status: null,
+        verses: [],
+        verses_done: 0,
+        total_verses: null,
+      },
+    });
   });
 
   it("returns 500 with error when rpc fails", async () => {

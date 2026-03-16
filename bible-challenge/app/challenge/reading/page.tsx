@@ -1,5 +1,8 @@
 "use client";
 
+// Temporary compatibility route.
+// Canonical flow uses /app/reading.
+
 import { useEffect, useState } from "react";
 
 const VERSES_PER_STEP = 3;
