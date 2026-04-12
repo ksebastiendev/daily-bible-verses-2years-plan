@@ -178,6 +178,86 @@ export function getOpenApiSpec(baseUrl?: string): OpenApiSpec {
       required: ["period", "generated_at", "leaders"],
       additionalProperties: false,
     },
+    ProfileResponse: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        email: { type: "string", nullable: true },
+        username: { type: "string" },
+        phone: { type: "string" },
+        points: { type: "integer" },
+        streak: { type: "integer" },
+        isEligibleForLeaderboard: { type: "boolean" },
+        isEligibleForRewards: { type: "boolean" },
+      },
+      required: [
+        "id",
+        "email",
+        "username",
+        "phone",
+        "points",
+        "streak",
+        "isEligibleForLeaderboard",
+        "isEligibleForRewards",
+      ],
+      additionalProperties: false,
+    },
+    UpdateProfileRequest: {
+      type: "object",
+      properties: {
+        username: { type: "string" },
+        phone: { type: "string" },
+      },
+      additionalProperties: false,
+    },
+    RewardWinner: {
+      type: "object",
+      properties: {
+        rank: { type: "integer" },
+        user_id: { type: "string" },
+        username: { type: "string" },
+        phone: { type: "string" },
+        score: { type: "number" },
+        streak: { type: "integer" },
+        reward_eligible: { type: "boolean" },
+      },
+      required: ["rank", "user_id", "username", "phone", "score", "streak", "reward_eligible"],
+      additionalProperties: false,
+    },
+    RewardWinnersResponse: {
+      type: "object",
+      properties: {
+        month: { type: "string" },
+        generated_at: { type: "string" },
+        winners: {
+          type: "array",
+          items: { $ref: "#/components/schemas/RewardWinner" },
+        },
+      },
+      required: ["month", "generated_at", "winners"],
+      additionalProperties: false,
+    },
+    NotificationLogRequest: {
+      type: "object",
+      properties: {
+        type: { type: "string" },
+        userId: { type: "string" },
+        sentAt: { type: "string" },
+        idempotencyKey: { type: "string" },
+        meta: { type: "object", additionalProperties: true },
+      },
+      required: ["type"],
+      additionalProperties: false,
+    },
+    NotificationLogResponse: {
+      type: "object",
+      properties: {
+        id: { type: "string", nullable: true },
+        deduplicated: { type: "boolean" },
+      },
+      required: ["id", "deduplicated"],
+      additionalProperties: false,
+    },
   };
 
   const paths: Record<string, OpenApiPathItem> = {
@@ -356,6 +436,196 @@ export function getOpenApiSpec(baseUrl?: string): OpenApiSpec {
               "application/json": {
                 schema: {
                   $ref: "#/components/schemas/LeaderboardResponse",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/profile": {
+      get: {
+        summary: "Get authenticated user profile",
+        tags: ["Profile"],
+        responses: {
+          "200": {
+            description: "Profile payload",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ProfileResponse",
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Unauthorized",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+        },
+      },
+      put: {
+        summary: "Update authenticated user profile",
+        tags: ["Profile"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/UpdateProfileRequest",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Updated profile payload",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ProfileResponse",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Bad request",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Unauthorized",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/rewards/winners": {
+      get: {
+        summary: "Get monthly reward winners",
+        tags: ["Rewards"],
+        responses: {
+          "200": {
+            description: "Reward winners payload",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/RewardWinnersResponse",
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Unauthorized",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal Server Error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/api/notifications/log": {
+      post: {
+        summary: "Write notification log with MVP idempotency",
+        tags: ["Notifications"],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/NotificationLogRequest",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Notification log created or deduplicated",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/NotificationLogResponse",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Bad request",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
+                },
+              },
+            },
+          },
+          "401": {
+            description: "Unauthorized",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorResponse",
                 },
               },
             },

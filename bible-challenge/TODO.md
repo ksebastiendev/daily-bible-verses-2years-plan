@@ -92,28 +92,28 @@ Rule of execution:
 ## Phase 6 — Optional identity (username + phone) (P1)
 
 ### 6.1 Profile completion
-- [ ] Add optional `username` + `phone` fields on profile.
-- [ ] Save without blocking reading progression.
+- [x] Add optional `username` + `phone` fields on profile.
+- [x] Save without blocking reading progression.
 
 ### 6.2 Eligibility flagging
-- [ ] Expose whether user is eligible for leaderboard/rewards.
+- [x] Expose whether user is eligible for leaderboard/rewards.
 
 ## Phase 7 — Rewards (P2)
 
 ### 7.1 Eligibility logic
-- [ ] Add minimal reward eligibility rules (identity complete + ranking criteria).
+- [x] Add minimal reward eligibility rules (identity complete + ranking criteria).
 
 ### 7.2 Reward ops support
-- [ ] Add admin-oriented query/export path for monthly winners.
+- [x] Add admin-oriented query/export path for monthly winners.
 
 ## Phase 8 — Notifications (P2)
 
 ### 8.1 Notification logs
-- [ ] Add writer for reminder/encouragement/reconnect events.
-- [ ] Ensure `notification_logs` writes are safe and idempotent enough for MVP.
+- [x] Add writer for reminder/encouragement/reconnect events.
+- [x] Ensure `notification_logs` writes are safe and idempotent enough for MVP.
 
 ### 8.2 Notification flow
-- [ ] Add basic docs for trigger timing and message templates.
+- [x] Add basic docs for trigger timing and message templates.
 
 ## Minimal testing checklist by phase
 - [x] Phase 1: update only impacted API tests (no broad rewrite).
