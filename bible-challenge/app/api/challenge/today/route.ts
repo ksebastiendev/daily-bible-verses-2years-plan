@@ -1,5 +1,4 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { fetchVersesByReference } from "@/lib/bible/adapter";
 
 interface TodayVerse {
   verse: number;
@@ -17,6 +16,27 @@ interface TodayPayload {
   verses: TodayVerse[];
   verses_done: number;
   total_verses: number | null;
+}
+
+function parseVersesFromPassageText(passageText: string): TodayVerse[] {
+  return passageText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^\[[^\]]+\s+(\d+):(\d+)\]\s*(.+)$/);
+      if (!match) return null;
+
+      const verse = Number.parseInt(match[2] ?? "", 10);
+      const text = (match[3] ?? "").trim();
+
+      if (!Number.isFinite(verse) || verse <= 0 || !text) {
+        return null;
+      }
+
+      return { verse, text };
+    })
+    .filter((item): item is TodayVerse => item !== null);
 }
 
 function normalizeTodayPayload(value: unknown): TodayPayload | null {
@@ -73,16 +93,29 @@ export async function GET() {
 
     const normalized = normalizeTodayPayload(data);
 
-    if (
-      normalized &&
-      normalized.reference &&
-      normalized.verses.length === 0
-    ) {
-      const externalVerses = await fetchVersesByReference(normalized.reference);
-      if (externalVerses && externalVerses.length > 0) {
-        normalized.verses = externalVerses;
-        if (normalized.total_verses === null) {
-          normalized.total_verses = externalVerses.length;
+    if (normalized && normalized.plan_day_id && normalized.verses.length === 0) {
+      const { data: planDay, error: planDayError } = await supabase
+        .from("plan_days")
+        .select("passage_text")
+        .eq("id", normalized.plan_day_id)
+        .maybeSingle();
+
+      if (planDayError) {
+        return Response.json({ error: planDayError }, { status: 500 });
+      }
+
+      const passageText =
+        planDay && typeof planDay === "object" && "passage_text" in planDay
+          ? (planDay.passage_text as string | null)
+          : null;
+
+      if (typeof passageText === "string" && passageText.trim()) {
+        const parsedVerses = parseVersesFromPassageText(passageText);
+        if (parsedVerses.length > 0) {
+          normalized.verses = parsedVerses;
+          if (normalized.total_verses === null) {
+            normalized.total_verses = parsedVerses.length;
+          }
         }
       }
     }

@@ -2,25 +2,30 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "./route";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { fetchVersesByReference } from "@/lib/bible/adapter";
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(),
 }));
 
-vi.mock("@/lib/bible/adapter", () => ({
-  fetchVersesByReference: vi.fn().mockResolvedValue(null),
-}));
-
 const mockedCreateSupabaseServerClient = vi.mocked(createSupabaseServerClient);
-const mockedFetchVersesByReference = vi.mocked(fetchVersesByReference);
 
 function createSupabaseMock(options: {
   session: unknown;
   sessionError?: unknown;
   rpcData?: unknown;
   rpcError?: unknown;
+  planDayPassageText?: string | null;
+  planDayError?: unknown;
 }) {
+  const fromBuilder = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { passage_text: options.planDayPassageText ?? null },
+      error: options.planDayError ?? null,
+    }),
+  };
+
   return {
     auth: {
       getSession: vi.fn().mockResolvedValue({
@@ -32,13 +37,13 @@ function createSupabaseMock(options: {
       data: options.rpcData ?? null,
       error: options.rpcError ?? null,
     }),
+    from: vi.fn().mockReturnValue(fromBuilder),
   };
 }
 
 describe("GET /api/challenge/today", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedFetchVersesByReference.mockResolvedValue(null);
   });
 
   it("returns 401 when no session", async () => {
@@ -57,7 +62,8 @@ describe("GET /api/challenge/today", () => {
     mockedCreateSupabaseServerClient.mockResolvedValue(
       createSupabaseMock({
         session: { user: { id: "user-1" } },
-        rpcData: { day_index: 1, reference: "Ps1-3" },
+        rpcData: { day_index: 1, reference: "Ps1-3", plan_day_id: "day-1" },
+        planDayPassageText: "[Psaumes 1:1] Heureux l'homme\n[Psaumes 1:2] Qui trouve son plaisir",
       }) as never,
     );
 
@@ -68,15 +74,18 @@ describe("GET /api/challenge/today", () => {
     expect(body).toEqual({
       data: {
         plan_id: null,
-        plan_day_id: null,
+        plan_day_id: "day-1",
         day_index: 1,
         reference: "Ps1-3",
         last_completed_day: null,
         start_day_index: null,
         status: null,
-        verses: [],
+        verses: [
+          { verse: 1, text: "Heureux l'homme" },
+          { verse: 2, text: "Qui trouve son plaisir" },
+        ],
         verses_done: 0,
-        total_verses: null,
+        total_verses: 2,
       },
     });
   });

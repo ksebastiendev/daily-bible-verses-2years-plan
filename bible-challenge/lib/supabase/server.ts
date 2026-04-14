@@ -1,13 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
-export async function createSupabaseServerClient() {
+function getSupabaseEnv() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing Supabase environment variables");
   }
+
+  return {
+    supabaseUrl,
+    supabaseAnonKey,
+  };
+}
+
+export async function createSupabaseServerClient() {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
   const cookieStore = await cookies();
 
@@ -23,4 +33,9 @@ export async function createSupabaseServerClient() {
       },
     },
   });
+}
+
+export function createSupabaseScriptClient() {
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
