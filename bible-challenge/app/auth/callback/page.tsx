@@ -48,6 +48,17 @@ export default function AuthCallbackPage() {
           return;
         }
 
+        if (data.session.user.email_confirmed_at) {
+          // Best-effort sync to profiles table; should not block user navigation.
+          await fetch("/api/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ emailVerified: true }),
+          });
+        }
+
         const { data: challenge, error: challengeError } = await supabase
           .from("user_challenges")
           .select("id")

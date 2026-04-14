@@ -35,6 +35,8 @@ function createSupabaseProfileMock(options: {
   };
 
   const upsert = vi.fn().mockResolvedValue({ error: options.upsertError ?? null });
+  const update = vi.fn().mockReturnThis();
+  const updateEq = vi.fn().mockResolvedValue({ error: null });
 
   const from = vi.fn((table: string) => {
     if (table !== "profiles") throw new Error(`Unexpected table: ${table}`);
@@ -43,6 +45,7 @@ function createSupabaseProfileMock(options: {
       eq: profileQuery.eq,
       maybeSingle: profileQuery.maybeSingle,
       upsert,
+      update: vi.fn().mockReturnValue({ eq: updateEq }),
     };
   });
 
@@ -72,6 +75,8 @@ describe("/api/profile", () => {
         id: "user-1",
         username: "anna",
         phone: "22990000001",
+        location: "Cotonou",
+        email_verified: true,
         points: 15,
         streak: 3,
       },
@@ -87,6 +92,31 @@ describe("/api/profile", () => {
     expect(body.data.phone).toBe("22990000001");
     expect(body.data.isEligibleForLeaderboard).toBe(true);
     expect(body.data.isEligibleForRewards).toBe(true);
+    expect(body.data.emailVerified).toBe(true);
+    expect(body.data.location).toBe("Cotonou");
+  });
+
+  it("GET returns emailVerified and location when set on profile row", async () => {
+    const supabaseMock = createSupabaseProfileMock({
+      profileData: {
+        id: "user-1",
+        username: "anna",
+        phone: "22990000001",
+        points: 15,
+        streak: 3,
+        location: "Cotonou",
+        email_verified: true,
+      },
+    });
+
+    mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.emailVerified).toBe(true);
+    expect(body.data.location).toBe("Cotonou");
   });
 
   it("GET returns unauthorized when session is missing", async () => {
@@ -106,6 +136,8 @@ describe("/api/profile", () => {
         id: "user-1",
         username: "paul",
         phone: "22990000009",
+        location: "Bohicon",
+        email_verified: true,
         points: 20,
         streak: 6,
       },
@@ -128,6 +160,64 @@ describe("/api/profile", () => {
     expect(body.data.isEligibleForLeaderboard).toBe(true);
   });
 
+  it("PUT updates location", async () => {
+    const supabaseMock = createSupabaseProfileMock({
+      profileData: {
+        id: "user-1",
+        username: "paul",
+        phone: "22990000009",
+        location: "Cotonou",
+        points: 20,
+        streak: 6,
+      },
+    });
+    mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);
+
+    const request = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ location: " Cotonou " }),
+    });
+
+    const response = await PUT(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(supabaseMock.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "user-1", location: "Cotonou" }),
+      { onConflict: "id" },
+    );
+    expect(body.data.location).toBe("Cotonou");
+  });
+
+  it("PUT updates emailVerified flag", async () => {
+    const supabaseMock = createSupabaseProfileMock({
+      profileData: {
+        id: "user-1",
+        username: "paul",
+        phone: "22990000009",
+        email_verified: true,
+        points: 20,
+        streak: 6,
+      },
+    });
+    mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);
+
+    const request = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ emailVerified: true }),
+    });
+
+    const response = await PUT(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(supabaseMock.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "user-1", email_verified: true }),
+      { onConflict: "id" },
+    );
+    expect(body.data.emailVerified).toBe(true);
+  });
+
   it("PUT rejects invalid body", async () => {
     const supabaseMock = createSupabaseProfileMock({});
     mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);
@@ -135,6 +225,34 @@ describe("/api/profile", () => {
     const request = new Request("http://localhost/api/profile", {
       method: "PUT",
       body: JSON.stringify({ username: 42 }),
+    });
+
+    const response = await PUT(request);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("PUT rejects invalid emailVerified type", async () => {
+    const supabaseMock = createSupabaseProfileMock({});
+    mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);
+
+    const request = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ emailVerified: "yes" }),
+    });
+
+    const response = await PUT(request);
+
+    expect(response.status).toBe(400);
+  });
+
+  it("PUT rejects location above max length", async () => {
+    const supabaseMock = createSupabaseProfileMock({});
+    mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);
+
+    const request = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ location: "x".repeat(101) }),
     });
 
     const response = await PUT(request);

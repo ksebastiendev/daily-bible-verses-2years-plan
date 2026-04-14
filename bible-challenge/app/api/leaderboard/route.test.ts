@@ -52,9 +52,9 @@ describe("GET /api/leaderboard", () => {
   it("returns global leaderboard with eligible profiles only", async () => {
     const supabaseMock = createSupabaseMock({
       profiles: [
-        { id: "u1", username: "anna", phone: "22990000001", points: 80, streak: 5 },
-        { id: "u2", username: "", phone: "22990000002", points: 99, streak: 8 },
-        { id: "u3", username: "paul", phone: "22990000003", points: 120, streak: 10 },
+        { id: "u1", username: "anna", phone: "22990000001", email_verified: true, location: "Cotonou", points: 80, streak: 5 },
+        { id: "u2", username: "bob", phone: "22990000002", email_verified: false, location: "Porto-Novo", points: 99, streak: 8 },
+        { id: "u3", username: "paul", phone: "22990000003", email_verified: true, location: "Bohicon", points: 120, streak: 10 },
       ],
     });
 
@@ -74,8 +74,8 @@ describe("GET /api/leaderboard", () => {
   it("returns monthly leaderboard", async () => {
     const supabaseMock = createSupabaseMock({
       profiles: [
-        { id: "u1", username: "anna", phone: "22990000001", points: 80, streak: 5 },
-        { id: "u3", username: "paul", phone: "22990000003", points: 120, streak: 10 },
+        { id: "u1", username: "anna", phone: "22990000001", email_verified: true, location: "Cotonou", points: 80, streak: 5 },
+        { id: "u3", username: "paul", phone: "22990000003", email_verified: true, location: "Bohicon", points: 120, streak: 10 },
       ],
       checkins: [
         { user_id: "u1", points_earned: 5, completed_at: "2026-03-01T08:00:00.000Z" },

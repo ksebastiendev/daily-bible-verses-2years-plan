@@ -9,8 +9,10 @@ interface ProfileState {
   email: string;
   id: string;
   isGuest: boolean;
+  emailVerified: boolean;
   username: string;
   phone: string;
+  location: string;
   points: number;
   streak: number;
   isEligibleForLeaderboard: boolean;
@@ -20,8 +22,9 @@ interface ProfileState {
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileState | null>(null);
-  const [form, setForm] = useState({ username: "", phone: "" });
+  const [form, setForm] = useState({ username: "", phone: "", location: "" });
   const [saving, setSaving] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,8 +44,10 @@ export default function ProfilePage() {
           email: "Invite",
           id: guestId,
           isGuest: true,
+          emailVerified: false,
           username: "",
           phone: "",
+          location: "",
           points: 0,
           streak: 0,
           isEligibleForLeaderboard: false,
@@ -61,8 +66,10 @@ export default function ProfilePage() {
             email: session.user.email ?? "email indisponible",
             id: session.user.id,
             isGuest: false,
+            emailVerified: false,
             username: "",
             phone: "",
+            location: "",
             points: 0,
             streak: 0,
             isEligibleForLeaderboard: false,
@@ -76,8 +83,10 @@ export default function ProfilePage() {
           email: body.data.email ?? session.user.email ?? "email indisponible",
           id: body.data.id ?? session.user.id,
           isGuest: false,
+          emailVerified: Boolean(body.data.emailVerified),
           username: body.data.username ?? "",
           phone: body.data.phone ?? "",
+          location: body.data.location ?? "",
           points: body.data.points ?? 0,
           streak: body.data.streak ?? 0,
           isEligibleForLeaderboard: Boolean(body.data.isEligibleForLeaderboard),
@@ -86,14 +95,17 @@ export default function ProfilePage() {
         setForm({
           username: body.data.username ?? "",
           phone: body.data.phone ?? "",
+          location: body.data.location ?? "",
         });
       } catch {
         setProfile({
           email: session.user.email ?? "email indisponible",
           id: session.user.id,
           isGuest: false,
+          emailVerified: false,
           username: "",
           phone: "",
+          location: "",
           points: 0,
           streak: 0,
           isEligibleForLeaderboard: false,
@@ -127,6 +139,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           username: form.username,
           phone: form.phone,
+          location: form.location,
         }),
       });
 
@@ -143,6 +156,7 @@ export default function ProfilePage() {
           ...prev,
           username: body.data.username ?? "",
           phone: body.data.phone ?? "",
+          location: body.data.location ?? "",
           points: body.data.points ?? prev.points,
           streak: body.data.streak ?? prev.streak,
           isEligibleForLeaderboard: Boolean(body.data.isEligibleForLeaderboard),
@@ -152,12 +166,38 @@ export default function ProfilePage() {
       setForm({
         username: body.data.username ?? "",
         phone: body.data.phone ?? "",
+        location: body.data.location ?? "",
       });
       setNotice("Profil mis a jour.");
     } catch {
       setNotice("Erreur reseau. Reessaie.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const resendVerificationLink = async () => {
+    if (!profile || profile.isGuest || sendingVerification || !profile.email.includes("@")) return;
+
+    setSendingVerification(true);
+    setNotice(null);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: profile.email,
+      });
+
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+
+      setNotice("Lien de verification envoye. Verifie ta boite mail.");
+    } catch {
+      setNotice("Erreur reseau. Reessaie.");
+    } finally {
+      setSendingVerification(false);
     }
   };
 
@@ -184,6 +224,20 @@ export default function ProfilePage() {
 
           {!profile?.isGuest ? (
             <div className="mt-4 space-y-3">
+              {!profile?.emailVerified ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-900">
+                  <p className="font-medium">Verifie ton email pour debloquer le classement.</p>
+                  <button
+                    type="button"
+                    onClick={resendVerificationLink}
+                    disabled={sendingVerification}
+                    className="mt-2 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                  >
+                    {sendingVerification ? "Envoi..." : "Renvoyer le lien"}
+                  </button>
+                </div>
+              ) : null}
+
               <label className="block">
                 <span className="text-xs font-medium text-gray-700">Username (optionnel)</span>
                 <input
@@ -196,6 +250,9 @@ export default function ProfilePage() {
 
               <label className="block">
                 <span className="text-xs font-medium text-gray-700">Phone (optionnel)</span>
+                <span className="mt-1 block text-[11px] text-gray-500">
+                  Requis pour recevoir les recompenses Mobile Money.
+                </span>
                 <input
                   value={form.phone}
                   onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
@@ -204,13 +261,32 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
-                <p>
-                  Eligible classement: {profile?.isEligibleForLeaderboard ? "Oui" : "Non"}
-                </p>
-                <p className="mt-1">
-                  Eligible recompenses: {profile?.isEligibleForRewards ? "Oui" : "Non"}
-                </p>
+              <label className="block">
+                <span className="text-xs font-medium text-gray-700">Localisation (optionnel)</span>
+                <input
+                  value={form.location}
+                  onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
+                  placeholder="ex: Cotonou"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                />
+              </label>
+
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-xs text-gray-700">
+                <p className="font-medium text-gray-800 mb-2">Acces classement &amp; recompenses</p>
+                <ul className="space-y-1.5">
+                  <li className={`flex items-center gap-2 ${profile?.emailVerified ? "text-green-700" : "text-amber-700"}`}>
+                    <span>{profile?.emailVerified ? "✓" : "○"}</span>
+                    <span>Email verifie{!profile?.emailVerified ? " — envoie le lien ci-dessus" : ""}</span>
+                  </li>
+                  <li className={`flex items-center gap-2 ${profile?.phone ? "text-green-700" : "text-amber-700"}`}>
+                    <span>{profile?.phone ? "✓" : "○"}</span>
+                    <span>Telephone Mobile Money{!profile?.phone ? " — ajoute ton numero ci-dessus" : ""}</span>
+                  </li>
+                  <li className={`flex items-center gap-2 ${profile?.location ? "text-green-700" : "text-amber-700"}`}>
+                    <span>{profile?.location ? "✓" : "○"}</span>
+                    <span>Localisation{!profile?.location ? " — indique ta ville ci-dessus" : ""}</span>
+                  </li>
+                </ul>
               </div>
 
               {notice ? <p className="text-xs text-gray-600">{notice}</p> : null}

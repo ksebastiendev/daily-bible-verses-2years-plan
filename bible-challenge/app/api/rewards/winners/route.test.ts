@@ -77,9 +77,9 @@ describe("GET /api/rewards/winners", () => {
   it("returns monthly winners with identity-complete profiles only", async () => {
     const supabaseMock = createSupabaseMock({
       profiles: [
-        { id: "u1", username: "anna", phone: "22990000001", streak: 6 },
-        { id: "u2", username: "", phone: "22990000002", streak: 9 },
-        { id: "u3", username: "paul", phone: "22990000003", streak: 4 },
+        { id: "u1", username: "anna", phone: "22990000001", email_verified: true, location: "Cotonou", streak: 6 },
+        { id: "u2", username: "bob", phone: "22990000002", email_verified: false, location: "Porto-Novo", streak: 9 },
+        { id: "u3", username: "paul", phone: "22990000003", email_verified: true, location: "Bohicon", streak: 4 },
       ],
       checkins: [
         { user_id: "u1", points_earned: 5, completed_at: "2026-03-01T08:00:00.000Z" },
@@ -119,7 +119,7 @@ describe("GET /api/rewards/winners", () => {
 
   it("supports csv export", async () => {
     const supabaseMock = createSupabaseMock({
-      profiles: [{ id: "u1", username: "anna", phone: "22990000001", streak: 6 }],
+      profiles: [{ id: "u1", username: "anna", phone: "22990000001", email_verified: true, location: "Cotonou", streak: 6 }],
       checkins: [{ user_id: "u1", points_earned: 5, completed_at: "2026-03-01T08:00:00.000Z" }],
     });
     mockedCreateSupabaseServerClient.mockResolvedValue(supabaseMock as never);

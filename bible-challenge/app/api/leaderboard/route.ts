@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isVerifiedChallenger } from "@/lib/challenger/eligibility";
 
 interface Leader {
   rank: number;
@@ -36,12 +37,6 @@ function monthRange(month: string | null) {
   return { start, end };
 }
 
-function isEligibleProfile(profile: Record<string, unknown>) {
-  const username = typeof profile.username === "string" ? profile.username.trim() : "";
-  const phone = typeof profile.phone === "string" ? profile.phone.trim() : "";
-  return username.length > 0 && phone.length > 0;
-}
-
 function toSafeScore(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -57,14 +52,14 @@ export async function GET(request: Request) {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id,username,phone,points,streak");
+      .select("id,username,phone,email_verified,location,points,streak");
 
     if (profilesError) {
       return Response.json({ error: profilesError }, { status: 500 });
     }
 
     const eligibleProfiles = (profiles ?? []).filter(
-      (item: unknown) => item && typeof item === "object" && isEligibleProfile(item as Record<string, unknown>),
+      (item: unknown) => item && typeof item === "object" && isVerifiedChallenger(item as Record<string, unknown>),
     ) as Array<Record<string, unknown>>;
 
     if (eligibleProfiles.length === 0) {

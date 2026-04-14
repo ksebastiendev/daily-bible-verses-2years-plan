@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isVerifiedChallenger } from "@/lib/challenger/eligibility";
 
 interface Winner {
   rank: number;
@@ -50,12 +51,6 @@ function resolveMonth(monthParam: string | null) {
   return { month, start, end };
 }
 
-function isIdentityComplete(profile: Record<string, unknown>) {
-  const username = typeof profile.username === "string" ? profile.username.trim() : "";
-  const phone = typeof profile.phone === "string" ? profile.phone.trim() : "";
-  return username.length > 0 && phone.length > 0;
-}
-
 function toCsv(payload: WinnersPayload) {
   const lines = [
     "month,rank,user_id,username,phone,score,streak,reward_eligible",
@@ -88,7 +83,7 @@ export async function GET(request: Request) {
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id,username,phone,streak");
+      .select("id,username,phone,email_verified,location,streak");
 
     if (profilesError) {
       return Response.json({ error: profilesError }, { status: 500 });
@@ -99,7 +94,7 @@ export async function GET(request: Request) {
       if (!row || typeof row !== "object") continue;
       const profile = row as Record<string, unknown>;
       const id = typeof profile.id === "string" ? profile.id : null;
-      if (!id || !isIdentityComplete(profile)) continue;
+      if (!id || !isVerifiedChallenger(profile)) continue;
       profileById.set(id, profile);
     }
 
